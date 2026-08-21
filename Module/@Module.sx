@@ -1,0 +1,13 @@
+public use GFX.Assets.Image.Image
+public use GFX.Assets.Model.Model
+public use GFX.Assets.Plugin.Plugin
+public use GFX.Assets.SpriteSheet.SpriteSheet
+
+contribute GFX.Plugins {
+    public use GFX.Assets.Plugin as Assets
+}
+
+contribute GFX.Resources {
+    public use GFX.Assets.Image.Store as Images
+    public use GFX.Assets.SpriteSheet.Store as SpriteSheets
+}

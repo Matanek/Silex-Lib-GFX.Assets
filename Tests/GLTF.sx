@@ -1,0 +1,48 @@
+use GFX.Assets.GLTF
+use GFX.Assets.Model
+use STD.Math
+
+func triangle() Model {
+    let vertices:Model.Vertex[] = [
+        Model.Vertex(position:Math.Vec3(-0.5, -0.5, 0.0)),
+        Model.Vertex(position:Math.Vec3(0.5, -0.5, 0.0)),
+        Model.Vertex(position:Math.Vec3(0.0, 0.5, 0.0))
+    ]
+    return Model.from_geometry(
+        Model.Geometry(vertices, [0, 1, 2]),
+        Model.Material(metallic:0.7, roughness:0.2),
+        "Triangle"
+    )
+}
+
+test "return structured GLTF failures through the expert API" {
+    match GLTF.try_load("Packages/GFX.Assets/Tests/Fixtures/Missing.glb") {
+        success(model) => { panic("missing GLB asset was loaded") }
+        failure(error) => { assert(error.kind == GLTF.ErrorKind.file) }
+    }
+}
+
+test "round-trip portable models through GLB and embedded glTF" {
+    let source = triangle()
+
+    let glb = GLTF.encode(source, GLTF.Format.glb)
+    let binary_copy = GLTF.decode(glb, GLTF.Format.glb)
+    assert(binary_copy.mesh_count() == 1)
+    assert(binary_copy.node_count() == 1)
+
+    let gltf = GLTF.encode(source, GLTF.Format.gltf)
+    let textual_copy = GLTF.decode(gltf, GLTF.Format.gltf)
+    assert(textual_copy.mesh_count() == 1)
+    assert(textual_copy.material(0).metallic == 0.7)
+}
+
+test "save and reload an exported GLB" {
+    let path = "/private/tmp/silex-gfx-assets-triangle.glb"
+    match GLTF.try_save(path, triangle()) {
+        failure(error) => { panic(error.detail) }
+        success => {}
+    }
+    let restored = GLTF.load(path)
+    assert(restored.mesh(0).triangle_count() == 1)
+    assert(restored.material(0).roughness == 0.2)
+}

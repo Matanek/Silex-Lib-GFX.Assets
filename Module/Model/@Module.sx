@@ -1,0 +1,291 @@
+use GFX.Assets.Image
+use GFX.Color
+use STD.Math
+
+public struct TextureTransform {
+    let offset:Math.Vec2
+    let scale:Math.Vec2
+    let rotation:float
+    let coordinates:int
+
+    init(
+        offset:Math.Vec2 = Math.Vec2(),
+        scale:Math.Vec2 = Math.Vec2(1.0),
+        rotation:float = 0.0,
+        coordinates:int = 0
+    ) {
+        self.offset = offset
+        self.scale = scale
+        self.rotation = rotation
+        self.coordinates = coordinates
+    }
+}
+
+public struct TextureReference {
+    let image:int
+    let transform:TextureTransform
+
+    init(image:int, transform:TextureTransform = TextureTransform()) {
+        self.image = image
+        self.transform = transform
+    }
+}
+
+public enum AlphaMode {
+    opaque
+    mask
+    blend
+}
+
+public struct Textures {
+    let albedo:TextureReference?
+    let normal:TextureReference?
+    let metallic_roughness:TextureReference?
+    let occlusion:TextureReference?
+    let emission:TextureReference?
+    let normal_scale:float
+    let occlusion_strength:float
+
+    init(
+        albedo:TextureReference? = null,
+        normal:TextureReference? = null,
+        metallic_roughness:TextureReference? = null,
+        occlusion:TextureReference? = null,
+        emission:TextureReference? = null,
+        normal_scale:float = 1.0,
+        occlusion_strength:float = 1.0
+    ) {
+        self.albedo = albedo
+        self.normal = normal
+        self.metallic_roughness = metallic_roughness
+        self.occlusion = occlusion
+        self.emission = emission
+        self.normal_scale = normal_scale
+        self.occlusion_strength = occlusion_strength
+    }
+}
+
+public struct Material {
+    var name:str
+    var albedo:Color
+    var metallic:float
+    var roughness:float
+    var occlusion:float
+    var emission:Color
+    var emission_intensity:float
+    var alpha_mode:AlphaMode
+    var alpha_cutoff:float
+    var double_sided:bool
+    var textures:Textures
+    var unlit:bool
+
+    init(
+        name:str = "",
+        albedo:Color = Color.white(),
+        metallic:float = 0.0,
+        roughness:float = 0.5,
+        occlusion:float = 1.0,
+        emission:Color = Color.black(),
+        emission_intensity:float = 0.0
+    ) {
+        self.name = name
+        self.albedo = albedo
+        self.metallic = metallic
+        self.roughness = roughness
+        self.occlusion = occlusion
+        self.emission = emission
+        self.emission_intensity = emission_intensity
+        self.alpha_mode = AlphaMode.opaque
+        self.alpha_cutoff = 0.5
+        self.double_sided = false
+        self.textures = Textures()
+        self.unlit = false
+    }
+}
+
+public struct Vertex {
+    var position:Math.Vec3
+    var normal:Math.Vec3
+    var uv:Math.Vec2
+    var color:Color
+
+    init(
+        position:Math.Vec3 = Math.Vec3(),
+        normal:Math.Vec3 = Math.Vec3.back(),
+        uv:Math.Vec2 = Math.Vec2(),
+        color:Color = Color.white()
+    ) {
+        self.position = position
+        self.normal = normal
+        self.uv = uv
+        self.color = color
+    }
+}
+
+public struct Geometry {
+    private let current_vertices:Vertex[]
+    private let current_indices:uint32[]
+
+    init(vertices:Vertex[] = [], indices:uint32[] = []) {
+        self.current_vertices = vertices
+        self.current_indices = indices
+        self.validate()
+    }
+
+    func vertices() Vertex[] { return self.current_vertices }
+    func indices() uint32[] { return self.current_indices }
+    func vertex_count() int { return self.current_vertices.count() }
+    func index_count() int { return self.current_indices.count() }
+    func triangle_count() int { return self.current_indices.count() / 3 }
+    func is_empty() bool {
+        return self.current_vertices.count() == 0 || self.current_indices.count() == 0
+    }
+
+    private func validate() {
+        if self.current_indices.count() % 3 != 0 {
+            panic("GFX.Assets model geometry indices must describe triangles")
+        }
+        for index in self.current_indices {
+            if index as int >= self.current_vertices.count() {
+                panic("GFX.Assets model geometry index is out of bounds")
+            }
+        }
+    }
+}
+
+public struct Transform {
+    var position:Math.Vec3
+    var rotation:Math.Quat
+    var scale:Math.Vec3
+
+    init(
+        position:Math.Vec3 = Math.Vec3(),
+        rotation:Math.Quat = Math.Quat(),
+        scale:Math.Vec3 = Math.Vec3(1.0)
+    ) {
+        self.position = position
+        self.rotation = rotation
+        self.scale = scale
+    }
+
+    func matrix() Math.Mat4 {
+        return Math.Mat4.transform(
+            self.position,
+            self.rotation.to_mat3(),
+            self.scale
+        )
+    }
+}
+
+public struct Primitive {
+    let mesh:int
+    let material:int
+}
+
+public struct Mesh {
+    let name:str
+    let primitives:Primitive[]
+}
+
+public struct Node {
+    let name:str
+    let parent:int
+    let children:int[]
+    let mesh:int
+    let transform:Transform
+    let world_transform:Transform
+}
+
+public struct Model {
+    private let current_meshes:Geometry[]
+    private let current_materials:Material[]
+    private let current_images:Image[]
+    private let current_model_meshes:Mesh[]
+    private let current_nodes:Node[]
+    private let current_roots:int[]
+    private let minimum:Math.Vec3
+    private let maximum:Math.Vec3
+
+    package init(
+        meshes:Geometry[],
+        materials:Material[],
+        images:Image[],
+        model_meshes:Mesh[],
+        nodes:Node[],
+        roots:int[],
+        minimum:Math.Vec3,
+        maximum:Math.Vec3
+    ) {
+        self.current_meshes = meshes
+        self.current_materials = materials
+        self.current_images = images
+        self.current_model_meshes = model_meshes
+        self.current_nodes = nodes
+        self.current_roots = roots
+        self.minimum = minimum
+        self.maximum = maximum
+    }
+
+    static func from_geometry(
+        geometry:Geometry,
+        material:Material = Material(),
+        name:str = "Model"
+    ) Model {
+        if geometry.is_empty() { panic("GFX.Assets model requires non-empty geometry") }
+        let bounds = geometry_bounds(geometry)
+        let geometries:Geometry[] = [geometry]
+        let materials:Material[] = [material]
+        let model_meshes:Mesh[] = [Mesh(
+            name:name,
+            primitives:[Primitive(mesh:0, material:0)]
+        )]
+        let nodes:Node[] = [Node(
+            name:name,
+            parent:-1,
+            children:[],
+            mesh:0,
+            transform:Transform(),
+            world_transform:Transform()
+        )]
+        return Model(
+            meshes:geometries,
+            materials:materials,
+            images:[],
+            model_meshes:model_meshes,
+            nodes:nodes,
+            roots:[0],
+            minimum:bounds[0],
+            maximum:bounds[1]
+        )
+    }
+
+    func mesh_count() int { return self.current_meshes.count() }
+    func model_mesh_count() int { return self.current_model_meshes.count() }
+    func material_count() int { return self.current_materials.count() }
+    func image_count() int { return self.current_images.count() }
+    func node_count() int { return self.current_nodes.count() }
+    func root_count() int { return self.current_roots.count() }
+    func mesh(index:int) Geometry { return self.current_meshes[index] }
+    func model_mesh(index:int) Mesh { return self.current_model_meshes[index] }
+    func material(index:int) Material { return self.current_materials[index] }
+    func image(index:int) Image { return self.current_images[index] }
+    func node(index:int) Node { return self.current_nodes[index] }
+    func root(index:int) int { return self.current_roots[index] }
+    func minimum_bounds() Math.Vec3 { return self.minimum }
+    func maximum_bounds() Math.Vec3 { return self.maximum }
+    func center() Math.Vec3 { return self.minimum.add(self.maximum).multiply(0.5) }
+    func radius() float { return Math.max(self.minimum.distance(self.maximum) * 0.5, 1.0) }
+}
+
+func geometry_bounds(geometry:Geometry) Math.Vec3[] {
+    let vertices = geometry.vertices()
+    var minimum = vertices[0].position
+    var maximum = minimum
+    var index = 1
+    while index < vertices.count() {
+        minimum = minimum.minimum(vertices[index].position)
+        maximum = maximum.maximum(vertices[index].position)
+        index++
+    }
+    return [minimum, maximum]
+}

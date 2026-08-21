@@ -1,0 +1,36 @@
+use GFX.Assets.Image
+use GFX.Assets.Model
+use GFX.Assets.SpriteSheet
+use GFX.Plugins
+use GFX.Resources
+use STD.Math
+
+test "expose cohesive asset domains and GFX catalog contributions" {
+    var images = Image.Store()
+    let image = images.add(Image())
+    assert(image.is_valid())
+
+    let vertices:Model.Vertex[] = [
+        Model.Vertex(position:Math.Vec3()),
+        Model.Vertex(position:Math.Vec3(1.0, 0.0, 0.0)),
+        Model.Vertex(position:Math.Vec3(0.0, 1.0, 0.0))
+    ]
+    let model = Model.from_geometry(
+        Model.Geometry(vertices, [0, 1, 2]),
+        Model.Material(),
+        "Consumer triangle"
+    )
+    assert(model.mesh_count() == 1)
+
+    var sheets = SpriteSheet.Store()
+    var sheet = SpriteSheet(image, 1, 1)
+    sheet.clip("idle", 0, 1, 1.0)
+    assert(sheets.add(sheet).is_valid())
+
+    let plugin = Plugins.Assets()
+    var image_resources = Resources.Images()
+    var sheet_resources = Resources.SpriteSheets()
+    assert(plugin.id() == "GFX.Assets.Plugin")
+    assert(image_resources.revision(Image.Handle()) == 0)
+    assert(!sheet_resources.contains(SpriteSheet.Handle()))
+}

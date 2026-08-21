@@ -1,0 +1,21 @@
+use GFX.Assets.Model
+use STD.Math
+
+test "describe model geometry without a scene domain" {
+    let vertices:Model.Vertex[] = [
+        Model.Vertex(position:Math.Vec3(-0.5, -0.5, 0.0)),
+        Model.Vertex(position:Math.Vec3(0.5, -0.5, 0.0)),
+        Model.Vertex(position:Math.Vec3(0.0, 0.5, 0.0))
+    ]
+    let indices:uint32[] = [0, 1, 2]
+    let model = Model.from_geometry(
+        Model.Geometry(vertices, indices),
+        Model.Material(metallic:0.7, roughness:0.2),
+        "Triangle"
+    )
+
+    assert(model.mesh_count() == 1)
+    assert(model.mesh(0).triangle_count() == 1)
+    assert(model.material(0).metallic == 0.7)
+    assert(model.node(0).transform.position == Math.Vec3())
+}
