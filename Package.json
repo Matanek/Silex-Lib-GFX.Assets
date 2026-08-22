@@ -1,7 +1,9 @@
 {
   "name": "GFX.Assets",
-  "version": "0.1.0",
-  "requires": { "silex": ">=0.38.36" },
+  "version": "0.2.0",
+  "description": "Portable image, model, and sprite-sheet data with runtime asset stores.",
+  "authors": ["Matanek"],
+  "requires": { "silex": ">=0.39.0" },
   "dependencies": {
     "GFX": "^0.37.0",
     "JSON": "^0.1.0",
