@@ -1,0 +1,22 @@
+use GFX.Application
+use GFX.Assets.Image
+use GFX.Assets.SpriteSheet
+use GFX.Plugins
+
+func stop_child(application:Application) { application.stop() }
+
+test "shutting down an Assets Bundle preserves stores inherited from its parent" {
+    for images_shared in [false, true] {
+        for sheets_shared in [false, true] {
+            var parent = Application()
+            if images_shared { parent.add_resource(Image.Store()) }
+            if sheets_shared { parent.add_resource(SpriteSheet.Store()) }
+            var bundle = Application.Bundle(parent)..add_plugin(Plugins.Assets())
+                ..add_system(Application.Schedule.update, stop_child)
+            parent.add_plugin(Plugins.BundleManager(bundle))
+            assert(parent.run() == 0)
+            assert(parent.resources().has<Image.Store>() == images_shared)
+            assert(parent.resources().has<SpriteSheet.Store>() == sheets_shared)
+        }
+    }
+}

@@ -20,8 +20,8 @@ public struct Plugin:PluginProtocol {
 
 func stop_assets(application:Application) {
     var resources = application.resources()
+    // A scoped application can inherit either store. remove only releases
+    // local values; inherited stores remain owned by the parent context.
     var images = resources.remove<Image.Store>()
     var sprite_sheets = resources.remove<SpriteSheet.Store>()
-    assert(images != null)
-    assert(sprite_sheets != null)
 }
