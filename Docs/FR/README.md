@@ -12,7 +12,8 @@ GPU, ni générateurs de géométrie 3D.
 silex install GFX.Assets
 ```
 
-GFX.Assets demande Silex 0.39.0 ou une version plus récente.
+Cette révision en développement requiert la toolchain avec capture
+`try` des opérations `Result` et extraction lors de l’appel ordinaire.
 
 ## Choisir un domaine public
 
@@ -71,11 +72,11 @@ le transfert vers le GPU appartiennent aux packages consommateurs.
 
 ## Lire et écrire les formats
 
-`PNG.load` et `PNG.try_load` lisent des fichiers. `PNG.encode`,
-`PNG.try_encode`, `PNG.decode` et `PNG.try_decode` travaillent sur des octets.
-
-`GLTF.load`, `GLTF.save`, `GLTF.encode` et `GLTF.decode` forment l’API directe ;
-leurs variantes `try_` retournent des erreurs structurées.
+`PNG.load` lit un fichier ; `PNG.encode` et `PNG.decode` travaillent sur
+des octets. `GLTF.load`, `GLTF.save`, `GLTF.encode` et `GLTF.decode` suivent
+le même modèle : chaque opération a une seule déclaration `Result`. L’appel
+ordinaire rend la valeur ou arrête le programme sur erreur. Ajoutez `try`
+pour conserver le résultat et traiter une erreur structurée.
 
 PNG et GLTF sont des adaptateurs isolés et transitoires de ce dépôt. Les
 domaines portables `Image` et `Model` n’en dépendent pas. Les codecs pourront

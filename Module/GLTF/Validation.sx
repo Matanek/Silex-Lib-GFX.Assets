@@ -11,33 +11,33 @@ func validate(root:JSON.Value, subject:str?) Result<void, Error> {
                         name != "KHR_materials_emissive_strength" &&
                         name != "KHR_materials_unlit"
                     {
-                        return unsupported(subject, "required glTF extension '$(name)' is not implemented")
+                        return (try unsupported(subject, "required glTF extension '$(name)' is not implemented"))
                     }
                 } else {
-                    return invalid(subject, "glTF extensionsRequired must contain strings")
+                    return (try invalid(subject, "glTF extensionsRequired must contain strings"))
                 }
             }
         } else {
-            return invalid(subject, "glTF extensionsRequired must be an array")
+            return (try invalid(subject, "glTF extensionsRequired must be an array"))
         }
     }
     if has_items(root, "animations") {
-        return unsupported(subject, "glTF animation is not implemented yet")
+        return (try unsupported(subject, "glTF animation is not implemented yet"))
     }
     if has_items(root, "skins") {
-        return unsupported(subject, "glTF skinning is not implemented yet")
+        return (try unsupported(subject, "glTF skinning is not implemented yet"))
     }
     if var meshes = root.member("meshes") {
         if var values = meshes.as_array() {
             for var mesh in values {
                 if mesh.member("weights") != null {
-                    return unsupported(subject, "glTF morph target weights are not implemented yet")
+                    return (try unsupported(subject, "glTF morph target weights are not implemented yet"))
                 }
                 if var primitives = mesh.member("primitives") {
                     if var items = primitives.as_array() {
                         for var primitive in items {
                             if primitive.member("targets") != null {
-                                return unsupported(subject, "glTF morph targets are not implemented yet")
+                                return (try unsupported(subject, "glTF morph targets are not implemented yet"))
                             }
                         }
                     }

@@ -28,7 +28,7 @@ test "round normalized image colors to RGBA8 channels" {
 test "load a standalone PNG image through the PNG API" {
     let path = "/private/tmp/silex-gfx-png-fixture.png"
     let encoded = PNG.encode(Image.solid(Color.sky_500()))
-    match File.write_all(path, @encoded[0:encoded.count()]) {
+    match (try File.write_all(path, @encoded[0:encoded.count()])) {
         failure(error) => { panic(error.detail) }
         success => {}
     }
@@ -39,7 +39,7 @@ test "load a standalone PNG image through the PNG API" {
 }
 
 test "report a missing PNG without panicking through the expert API" {
-    match PNG.try_load("Packages/GFX.Assets/Tests/Fixtures/Missing.png") {
+    match (try PNG.load("Packages/GFX.Assets/Tests/Fixtures/Missing.png")) {
         success(image) => { panic("missing PNG was loaded") }
         failure(error) => { assert(error != "") }
     }

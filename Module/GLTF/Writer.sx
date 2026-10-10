@@ -42,7 +42,7 @@ struct ExportData {
 
 func encode(model:Model, format:Format) Result<uint8[], Error> {
     var data = ExportData(binary:[], views:[], accessors:[], geometries:[], image_views:[])
-    try pack_model(model, data)
+    try pack_model(model, data) else error { return Result<uint8[],Error>.failure(error) }
     let embedded = match format { gltf => true; glb => false }
     let json = build_json(model, data, embedded)
     if embedded { return Result<uint8[], Error>.success(UTF8.bytes(json)) }
@@ -59,7 +59,7 @@ func pack_model(model:Model, data:&ExportData) Result<void, Error> {
     while index < model.image_count() {
         align(data.binary)
         let offset = data.binary.count()
-        match PNG.try_encode(model.image(index)) {
+        match (try PNG.encode(model.image(index))) {
             failure(detail) => {
                 return Result<void, Error>.failure(Error(
                     kind:ErrorKind.image,

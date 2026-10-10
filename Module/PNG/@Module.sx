@@ -3,24 +3,18 @@ use Interop.Boundary
 use Interop.C
 use STD.File
 
-public func try_load(path:str) Result<Image, str> {
+public func load(path:str) Result<Image, str> {
     if path == "" { return Result<Image, str>.failure("PNG path cannot be empty") }
-    match File.read_all(path, 128 * 1024 * 1024) {
+    match (try File.read_all(path, 128 * 1024 * 1024)) {
         failure(error) => {
             return Result<Image, str>.failure("could not read PNG image '" + path + "': " + error.detail)
         }
-        success(bytes) => { return try_decode(bytes) }
+        success(bytes) => { return (try decode(bytes)) }
     }
 }
 
-public func load(path:str) Image {
-    match try_load(path) {
-        failure(error) => { panic(error) }
-        success(image) => { return image }
-    }
-}
 
-public func try_decode(bytes:uint8[]) Result<Image, str> {
+public func decode(bytes:uint8[]) Result<Image, str> {
     if bytes.count() == 0 { return Result<Image, str>.failure("PNG image is empty") }
     let packed = C.string(@bytes[0:bytes.count()])
     let stream = C.address_bits(sdl_io_from_const_memory(
@@ -65,14 +59,8 @@ public func try_decode(bytes:uint8[]) Result<Image, str> {
     return Result<Image, str>.success(Image.rgba8(width, height, pixels))
 }
 
-public func decode(bytes:uint8[]) Image {
-    match try_decode(bytes) {
-        failure(error) => { panic(error) }
-        success(image) => { return image }
-    }
-}
 
-public func try_encode(image:Image) Result<uint8[], str> {
+public func encode(image:Image) Result<uint8[], str> {
     let packed = image.packed_pixels()
     let surface = C.address_bits(sdl_create_surface_from(
         image.width() as int32,
@@ -123,12 +111,6 @@ public func try_encode(image:Image) Result<uint8[], str> {
     return Result<uint8[], str>.success(result)
 }
 
-public func encode(image:Image) uint8[] {
-    match try_encode(image) {
-        failure(error) => { panic(error) }
-        success(bytes) => { return bytes }
-    }
-}
 
 func byte_storage(minimum:int) str {
     var bytes = "\0"

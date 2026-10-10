@@ -12,7 +12,8 @@ generators.
 silex install GFX.Assets
 ```
 
-GFX.Assets requires Silex 0.39.0 or newer.
+This development revision requires the toolchain with `try` capture for
+`Result` operations and extraction on ordinary calls.
 
 ## Choose a public domain
 
@@ -71,11 +72,11 @@ belong to consuming packages.
 
 ## Read and write formats
 
-`PNG.load` and `PNG.try_load` read files. `PNG.encode`, `PNG.try_encode`,
-`PNG.decode`, and `PNG.try_decode` operate on bytes.
-
-`GLTF.load`, `GLTF.save`, `GLTF.encode`, and `GLTF.decode` form the direct API;
-their `try_` variants return structured errors.
+`PNG.load` reads a file; `PNG.encode` and `PNG.decode` operate on bytes.
+`GLTF.load`, `GLTF.save`, `GLTF.encode`, and `GLTF.decode` use the same model:
+each operation has one `Result` declaration. An ordinary call returns the
+value or stops the program on failure. Add `try` to keep the result and handle
+a structured error.
 
 PNG and GLTF are isolated, transitional adapters in this repository. The
 portable `Image` and `Model` domains do not depend on them. The codecs can

@@ -8,42 +8,30 @@ public use GFX.Assets.GLTF.Types.ErrorKind
 public use GFX.Assets.GLTF.Types.Error
 public use GFX.Assets.GLTF.Types.Format
 
-public func try_decode(bytes:uint8[], format:Format = Format.glb) Result<Model, Error> {
+public func decode(bytes:uint8[], format:Format = Format.glb) Result<Model, Error> {
     return match format {
-        glb => GFX.Assets.GLTF.Reader.decode_glb(bytes, null)
-        gltf => GFX.Assets.GLTF.Reader.decode_gltf(bytes, null)
+        glb => (try GFX.Assets.GLTF.Reader.decode_glb(bytes, null))
+        gltf => (try GFX.Assets.GLTF.Reader.decode_gltf(bytes, null))
     }
 }
 
-public func decode(bytes:uint8[], format:Format = Format.glb) Model {
-    match try_decode(bytes, format) {
-        failure(error) => { panic(display(error)) }
-        success(model) => { return model }
-    }
+
+public func encode(model:Model, format:Format = Format.glb) Result<uint8[], Error> {
+    return (try GFX.Assets.GLTF.Writer.encode(model, format))
 }
 
-public func try_encode(model:Model, format:Format = Format.glb) Result<uint8[], Error> {
-    return GFX.Assets.GLTF.Writer.encode(model, format)
-}
 
-public func encode(model:Model, format:Format = Format.glb) uint8[] {
-    match try_encode(model, format) {
-        failure(error) => { panic(display(error)) }
-        success(bytes) => { return bytes }
-    }
-}
-
-public func try_load(path:Path) Result<Model, Error> {
+public func load(path:Path) Result<Model, Error> {
     var bytes:uint8[] = []
-    match File.read_all(path, 256 * 1024 * 1024) {
+    match (try File.read_all(path, 256 * 1024 * 1024)) {
         failure(error) => { return Result<Model, Error>.failure(file_error(path, error)) }
         success(value) => { bytes = value }
     }
     if ends_with_case_insensitive(path, ".glb") {
-        return GFX.Assets.GLTF.Reader.decode_glb(bytes, path)
+        return (try GFX.Assets.GLTF.Reader.decode_glb(bytes, path))
     }
     if ends_with_case_insensitive(path, ".gltf") {
-        return GFX.Assets.GLTF.Reader.decode_gltf(bytes, path)
+        return (try GFX.Assets.GLTF.Reader.decode_gltf(bytes, path))
     }
     return Result<Model, Error>.failure(Error(
         kind:ErrorKind.unsupported_feature,
@@ -52,14 +40,8 @@ public func try_load(path:Path) Result<Model, Error> {
     ))
 }
 
-public func load(path:Path) Model {
-    match try_load(path) {
-        failure(error) => { panic(display(error)) }
-        success(model) => { return model }
-    }
-}
 
-public func try_save(path:Path, model:Model) Result<void, Error> {
+public func save(path:Path, model:Model) Result<void, Error> {
     var format = Format.glb
     if ends_with_case_insensitive(path, ".gltf") { format = Format.gltf }
     elif !ends_with_case_insensitive(path, ".glb") {
@@ -69,7 +51,7 @@ public func try_save(path:Path, model:Model) Result<void, Error> {
             detail:"GFX.Assets.GLTF supports .gltf and .glb model assets"
         ))
     }
-    let bytes = try try_encode(model, format)
+    let bytes = try encode(model, format) else error { return Result<void,Error>.failure(error) }
     if bytes.count() == 0 {
         return Result<void, Error>.failure(Error(
             kind:ErrorKind.invalid_document,
@@ -77,18 +59,12 @@ public func try_save(path:Path, model:Model) Result<void, Error> {
             detail:"GLTF encoder produced an empty document"
         ))
     }
-    match File.write_all(path, @bytes[0:bytes.count()]) {
+    match (try File.write_all(path, @bytes[0:bytes.count()])) {
         failure(error) => { return Result<void, Error>.failure(file_error(path, error)) }
         success => { return Result<void, Error>.success() }
     }
 }
 
-public func save(path:Path, model:Model) {
-    match try_save(path, model) {
-        failure(error) => { panic(display(error)) }
-        success => {}
-    }
-}
 
 func file_error(path:Path, error:STDError) Error {
     return Error(kind:ErrorKind.file, subject:path, detail:error.detail)

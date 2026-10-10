@@ -16,7 +16,7 @@ func triangle() Model {
 }
 
 test "return structured GLTF failures through the expert API" {
-    match GLTF.try_load("Packages/GFX.Assets/Tests/Fixtures/Missing.glb") {
+    match (try GLTF.load("Packages/GFX.Assets/Tests/Fixtures/Missing.glb")) {
         success(model) => { panic("missing GLB asset was loaded") }
         failure(error) => { assert(error.kind == GLTF.ErrorKind.file) }
     }
@@ -38,7 +38,7 @@ test "round-trip portable models through GLB and embedded glTF" {
 
 test "save and reload an exported GLB" {
     let path = "/private/tmp/silex-gfx-assets-triangle.glb"
-    match GLTF.try_save(path, triangle()) {
+    match (try GLTF.save(path, triangle())) {
         failure(error) => { panic(error.detail) }
         success => {}
     }
